@@ -425,7 +425,7 @@ details.process .body{padding:0 12px 12px;font-size:11.5px;color:var(--ink-2)}
 @media print{
   @page{size:A4;margin:12mm}
   html,body{background:#fff;padding:0}
-  .top,.hero,.switch-wrap,.col-form,.cta,.foot,.skip,.screen-only,.res-tools .btn{display:none!important}
+  .top,.hero,.switch-wrap,.col-form,.cta,.foot,.skip,.screen-only,.res-tools .btn,.page-note{display:none!important}
   .shell{max-width:none;padding:0;margin:0}
   .panel:not([hidden]){display:block!important}
   .col-out,.res-wrap{min-width:0}
@@ -1418,7 +1418,7 @@ var CalcCore = (function () {
   }
 
   function disclaimerBox() {
-    return '<p class="disclaimer"><b>참고용 안내</b> · 본 계산기는 법정 기준 참고용이며, 회사 내규·세금(퇴직소득세)·비과세 수당 포함 여부에 따라 실수령액은 달라질 수 있습니다. 퇴직금은 1일 평균임금과 1일 통상임금 중 큰 금액으로 계산했습니다. 퇴직소득세는 퇴직급여 전액을 과세대상으로 보고 계산했습니다.</p>';
+    return '<p class="disclaimer"><b>참고용 안내</b> · 본 계산기는 법정 기준 참고용이며, 회사 내규·세금(퇴직소득세)·비과세 수당 포함 여부에 따라 실수령액은 달라질 수 있습니다. 퇴직금은 1일 평균임금과 1일 통상임금 중 큰 금액으로 계산했습니다. 퇴직소득세는 퇴직급여 전액을 과세대상으로 보고 계산했습니다. 지급 전 노무사·세무사 확인을 권합니다.</p>';
   }
 
   /* ---------- calculate ---------- */
