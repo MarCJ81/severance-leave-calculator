@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f2f4f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="canonical" href="https://marcj81.github.io/severance-leave-calculator/">
+<meta name="robots" content="index, follow">
+<title>퇴직금·연차 계산기</title>
+<meta name="description" content="근로기준법·근로자퇴직급여 보장법 기준 퇴직금과 연차(잔여연차·연차수당)를 계산합니다.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="퇴직금·연차 계산기">
+<meta property="og:description" content="고용노동부 기준으로 퇴직금과 연차(잔여연차·연차수당)를 계산합니다. 설치 없이 모바일에서 바로.">
+<meta property="og:url" content="https://marcj81.github.io/severance-leave-calculator/">
+<meta property="og:site_name" content="퇴직금·연차 계산기">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="퇴직금·연차 계산기">
+<style>
+  :root{
+    --bg:#f1f3f6; --card:#ffffff; --ink:#0f172a; --sub:#64748b; --line:#e2e8f0;
+    --brand:#2f6fed; --brand-soft:#e8efff; --brand-ink:#1d4ed8;
+    --warn-bg:#fff7ed; --warn-ink:#9a3412; --warn-line:#fed7aa;
+    --ok-ink:#047857; --ok-bg:#ecfdf5;
+    --r:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic","Segoe UI",Roboto,sans-serif;
+    -webkit-text-size-adjust:100%; font-size:16px; line-height:1.5;
+    padding-bottom:calc(92px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:480px; margin:0 auto; padding:0 16px}
+  header.top{
+    position:sticky; top:0; z-index:20;
+    background:rgba(241,243,246,.92); backdrop-filter:saturate(180%) blur(12px);
+    -webkit-backdrop-filter:saturate(180%) blur(12px);
+    border-bottom:1px solid rgba(226,232,240,.9);
+    padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  }
+  header.top .inner{max-width:480px; margin:0 auto}
+  h1{font-size:18px; margin:0; letter-spacing:-.02em}
+  h1 span{color:var(--brand)}
+  .sub{margin:2px 0 0; font-size:12px; color:var(--sub)}
+  .tabs{display:flex; gap:6px; background:#e4e9f0; padding:4px; border-radius:12px; margin-top:12px}
+  .tabs button{
+    flex:1; appearance:none; border:0; background:transparent; color:#475569;
+    font:inherit; font-weight:700; font-size:14px; padding:10px 8px; border-radius:9px;
+    transition:background .15s, color .15s; cursor:pointer;
+  }
+  .tabs button[aria-selected="true"]{background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(15,23,42,.1)}
+  main{padding-top:14px}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+    padding:16px; margin-bottom:12px;
+  }
+  .field{margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  .field > label{display:block; font-size:13px; font-weight:700; color:#334155; margin-bottom:6px}
+  .field input[type="date"], .field input[type="number"], .field input[type="text"]{
+    width:100%; appearance:none; border:1px solid #cbd5e1; background:#fff; color:var(--ink);
+    border-radius:11px; padding:0 12px; height:48px; font:inherit; font-size:16px; font-weight:600;
+    letter-spacing:-.01em;
+  }
+  .field input:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(47,111,237,.15)}
+  .field input::-webkit-outer-spin-button, .field input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+  .money{position:relative}
+  .field .money input{padding-right:40px; text-align:right}
+  .field .money.day input{padding-right:34px; text-align:left}
+  .money .unit{position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--sub); pointer-events:none}
+  .hint{margin:6px 0 0; font-size:12px; color:var(--sub); letter-spacing:-.01em}
+  .hint b{color:var(--brand-ink); font-weight:700}
+  .seg{display:flex; gap:6px; background:#eef2f7; padding:4px; border-radius:11px}
+  .seg button{
+    flex:1; appearance:none; border:0; background:transparent; color:#475569; font:inherit;
+    font-size:13.5px; font-weight:700; padding:9px 6px; border-radius:8px; cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .seg button[aria-pressed="true"]{background:#fff; color:var(--brand-ink); box-shadow:0 1px 2px rgba(15,23,42,.12)}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .readonly{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    border:1px dashed #cbd5e1; border-radius:11px; padding:11px 12px; background:#f8fafc;
+    font-size:13px; color:#334155;
+  }
+  .readonly b{font-size:14px; color:var(--ink); font-variant-numeric:tabular-nums}
+
+  /* results */
+  #lv-result, #sv-result{margin-bottom:12px}
+  .result{border:1px solid var(--line); border-radius:var(--r); background:#fff; padding:16px; margin-bottom:12px}
+  .result h2{font-size:15px; margin:0 0 12px; letter-spacing:-.02em}
+  .kpi{display:flex; flex-direction:column; gap:2px}
+  .kpi + .kpi{margin-top:14px; padding-top:14px; border-top:1px dashed var(--line)}
+  .kpi .label{font-size:12.5px; color:var(--sub); font-weight:700}
+  .kpi .value{font-size:34px; font-weight:800; letter-spacing:-.03em; font-variant-numeric:tabular-nums; line-height:1.15}
+  .kpi .value small{font-size:17px; font-weight:700; margin-left:2px; color:#334155}
+  .kpi .formula{font-size:12.5px; color:var(--sub); font-variant-numeric:tabular-nums}
+  .kpi.accent .value{color:var(--brand-ink)}
+  .rows{display:flex; flex-direction:column; gap:0; margin-top:14px; border-top:1px solid var(--line)}
+  .row{display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:13.5px}
+  .row:last-child{border-bottom:0}
+  .row .k{color:var(--sub); flex:0 0 auto; white-space:nowrap}
+  .row .v{font-weight:700; font-variant-numeric:tabular-nums; text-align:right; flex:0 1 auto; min-width:0; word-break:keep-all; overflow-wrap:anywhere}
+  .badge{
+    display:inline-block; font-size:11.5px; font-weight:800; padding:3px 8px; border-radius:999px;
+    background:var(--brand-soft); color:var(--brand-ink); vertical-align:middle; letter-spacing:-.01em;
+  }
+  .badge.gray{background:#f1f5f9; color:#475569}
+  .badge.ok{background:var(--ok-bg); color:var(--ok-ink)}
+  .warn{
+    display:flex; gap:8px; align-items:flex-start;
+    background:var(--warn-bg); border:1px solid var(--warn-line); color:var(--warn-ink);
+    border-radius:12px; padding:11px 12px; font-size:13px; font-weight:600; letter-spacing:-.01em;
+  }
+  .warn .ico{flex:0 0 auto; font-size:14px; line-height:1.4}
+  details.process{border:1px solid var(--line); border-radius:12px; padding:0; margin-top:12px; background:#fbfcfe}
+  details.process summary{
+    cursor:pointer; padding:12px 14px; font-size:13.5px; font-weight:700; color:#334155; list-style:none;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  details.process summary::-webkit-details-marker{display:none}
+  details.process summary::after{content:"▾"; color:var(--sub); font-size:12px; transition:transform .15s}
+  details.process[open] summary::after{transform:rotate(180deg)}
+  details.process .body{padding:0 14px 14px; font-size:13px; color:#334155; letter-spacing:-.01em}
+  .steps{margin:0; padding:0; list-style:none; counter-reset:s}
+  .steps li{
+    position:relative; padding:7px 0 7px 26px; border-top:1px dashed #e2e8f0; font-variant-numeric:tabular-nums;
+  }
+  .steps li:first-child{border-top:0}
+  .steps li::before{
+    counter-increment:s; content:counter(s);
+    position:absolute; left:0; top:8px; width:18px; height:18px; border-radius:50%;
+    background:var(--brand-soft); color:var(--brand-ink); font-size:11px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .steps b{font-weight:800}
+  .cmp{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-top:4px}
+  .cmp-row{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 14px; font-size:14px}
+  .cmp-row + .cmp-row{border-top:1px solid var(--line)}
+  .cmp-row.on{background:var(--brand-soft)}
+  .cmp-row .k{color:#334155; font-weight:700}
+  .cmp-row .v{font-weight:800; font-variant-numeric:tabular-nums}
+  .cmp-row .v small{font-size:12px; font-weight:700; color:var(--sub); margin-left:4px}
+  .note{margin:10px 0 0; font-size:12.5px; color:var(--sub); letter-spacing:-.01em}
+  .disclaimer{
+    font-size:12px; color:var(--sub); line-height:1.6; letter-spacing:-.01em;
+    background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:0 0 12px;
+  }
+  .disclaimer b{color:#334155}
+  .empty{
+    text-align:center; color:var(--sub); font-size:13.5px; padding:26px 18px; background:#fff;
+    border:1px dashed #cbd5e1; border-radius:var(--r); margin-bottom:12px;
+  }
+  .cta{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg) 62%, rgba(241,243,246,0));
+  }
+  .cta .inner{max-width:480px; margin:0 auto}
+  .cta button{
+    width:100%; appearance:none; border:0; border-radius:14px; height:54px;
+    background:var(--brand); color:#fff; font:inherit; font-size:16.5px; font-weight:800; letter-spacing:-.01em;
+    cursor:pointer; box-shadow:0 6px 16px rgba(47,111,237,.28);
+  }
+  .cta button:active{transform:translateY(1px); box-shadow:0 3px 10px rgba(47,111,237,.24)}
+  [hidden]{display:none !important}
+  .foot{padding:2px 16px 18px}
+  .foot .inner{max-width:480px; margin:0 auto}
+  .foot p{margin:0; font-size:12px; color:var(--sub); line-height:1.7; letter-spacing:-.01em; word-break:keep-all}
+  .foot a{color:var(--brand); font-weight:700; text-decoration:underline; text-underline-offset:2px}
+  .foot a:hover{color:var(--brand-ink)}
+  @media print{ .foot, .cta, header.top .tabs{display:none !important} }
+  @media (prefers-reduced-motion:no-preference){
+    .result.reveal{animation:pop .22s ease-out}
+    @keyframes pop{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="inner">
+    <h1>퇴직금<span>·</span>연차 계산기</h1>
+    <p class="sub">근로기준법·근로자퇴직급여 보장법 기준 · 참고용</p>
+    <div class="tabs" role="tablist" aria-label="계산기 선택">
+      <button id="tab-btn-leave" role="tab" aria-selected="true" aria-controls="tab-leave" data-tab="leave">연차 계산</button>
+      <button id="tab-btn-severance" role="tab" aria-selected="false" aria-controls="tab-severance" data-tab="severance">퇴직금 계산</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ================= 연차 ================= -->
+  <section id="tab-leave" role="tabpanel" aria-labelledby="tab-btn-leave">
+    <div class="card">
+      <div class="field">
+        <label for="lv-hire">입사일</label>
+        <input type="date" id="lv-hire" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="lv-ref">기준일</label>
+        <input type="date" id="lv-ref" autocomplete="off">
+        <p class="hint">지금까지의 연차는 오늘, 퇴사 정산은 <b>마지막 근무일</b>을 넣으세요.</p>
+      </div>
+      <div class="field">
+        <label>산정 기준</label>
+        <div class="seg" id="lv-basis" role="group" aria-label="연차 산정 기준">
+          <button type="button" data-v="anniversary" aria-pressed="true">입사일 기준</button>
+          <button type="button" data-v="fiscal" aria-pressed="false">회계연도 기준</button>
+        </div>
+        <p class="hint">회사 규정에 따라 다릅니다. 아래에서 두 기준을 함께 비교합니다.</p>
+      </div>
+      <div class="field">
+        <label>계산 목적</label>
+        <div class="seg" id="lv-purpose" role="group" aria-label="계산 목적">
+          <button type="button" data-v="current" aria-pressed="true">재직 중 잔여 연차</button>
+          <button type="button" data-v="exit" aria-pressed="false">퇴사 정산</button>
+        </div>
+        <p class="hint">퇴사 정산은 마지막 근무일까지의 근무 비율로 정산합니다.</p>
+      </div>
+      <div class="field">
+        <label for="lv-used">사용한 연차</label>
+        <div class="money day">
+          <input type="number" id="lv-used" inputmode="decimal" step="0.5" min="0" placeholder="0" autocomplete="off">
+          <span class="unit">일</span>
+        </div>
+        <p class="hint">해당 연도(부여일 이후)에 사용한 일수</p>
+      </div>
+      <div class="field">
+        <label>1일 통상임금</label>
+        <div class="seg" id="lv-wage-mode" role="group" aria-label="1일 통상임금 입력 방식">
+          <button type="button" data-v="month" aria-pressed="true">월급으로 계산</button>
+          <button type="button" data-v="day" aria-pressed="false">직접 입력</button>
+        </div>
+        <div id="lv-month-wrap" style="margin-top:10px">
+          <div class="money">
+            <input type="text" id="lv-month-wage" inputmode="numeric" placeholder="2,717,000" autocomplete="off">
+            <span class="unit">원</span>
+          </div>
+          <p class="hint" id="lv-day-from-month">월 통상임금 ÷ 209 × 8 (주 40시간·1일 8시간 기준) = <b>0원</b></p>
+        </div>
+        <div id="lv-day-wrap" style="margin-top:10px" hidden>
+          <div class="money">
+            <input type="text" id="lv-day-wage" inputmode="numeric" placeholder="104,000" autocomplete="off">
+            <span class="unit">원</span>
+          </div>
+          <p class="hint">연차 1일분 통상임금(8시간 기준)</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="lv-result" aria-live="polite"></div>
+  </section>
+
+  <!-- ================= 퇴직금 ================= -->
+  <section id="tab-severance" role="tabpanel" aria-labelledby="tab-btn-severance" hidden>
+    <div class="card">
+      <div class="grid2">
+        <div class="field">
+          <label for="sv-hire">입사일</label>
+          <input type="date" id="sv-hire" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="sv-exit">퇴사일</label>
+          <input type="date" id="sv-exit" autocomplete="off">
+        </div>
+      </div>
+      <p class="hint" style="margin-top:-6px">퇴사일은 <b>마지막으로 근무한 날</b> 기준입니다(초일 산입).</p>
+
+      <div class="field" style="margin-top:14px">
+        <div class="readonly"><span>재직일수</span><b id="sv-service-days">—</b></div>
+      </div>
+
+      <div class="field">
+        <label for="sv-month-wage">월급 (세전)</label>
+        <div class="money">
+          <input type="text" id="sv-month-wage" inputmode="numeric" placeholder="3,000,000" autocomplete="off">
+          <span class="unit">원</span>
+        </div>
+        <p class="hint">입력하면 3개월 임금총액·1일 통상임금이 자동으로 채워집니다.</p>
+      </div>
+
+      <div class="field">
+        <label for="sv-wage3m">최근 3개월 임금 총액</label>
+        <div class="money">
+          <input type="text" id="sv-wage3m" inputmode="numeric" placeholder="0" autocomplete="off">
+          <span class="unit">원</span>
+        </div>
+        <div class="readonly" style="margin-top:8px"><span id="sv-period">3개월 기간</span><b id="sv-days3m">—</b></div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label for="sv-bonus">연간 상여금 총액</label>
+          <div class="money">
+            <input type="text" id="sv-bonus" inputmode="numeric" placeholder="0" autocomplete="off">
+            <span class="unit">원</span>
+          </div>
+          <p class="hint">× 3/12 가산</p>
+        </div>
+        <div class="field">
+          <label for="sv-leavepay">전년도 연차수당</label>
+          <div class="money">
+            <input type="text" id="sv-leavepay" inputmode="numeric" placeholder="0" autocomplete="off">
+            <span class="unit">원</span>
+          </div>
+          <p class="hint">× 3/12 가산</p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>1일 통상임금</label>
+        <div class="seg" id="sv-wage-mode" role="group" aria-label="1일 통상임금 입력 방식">
+          <button type="button" data-v="month" aria-pressed="true">월급으로 계산</button>
+          <button type="button" data-v="day" aria-pressed="false">직접 입력</button>
+        </div>
+        <div id="sv-month-wrap" style="margin-top:10px">
+          <p class="hint" id="sv-day-from-month">윗줄 월급 ÷ 209 × 8 = <b>0원</b></p>
+        </div>
+        <div id="sv-day-wrap" style="margin-top:10px" hidden>
+          <div class="money">
+            <input type="text" id="sv-day-wage" inputmode="numeric" placeholder="100,000" autocomplete="off">
+            <span class="unit">원</span>
+          </div>
+          <p class="hint">평균임금과 비교해 큰 금액이 적용됩니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="sv-result" aria-live="polite"></div>
+  </section>
+
+  <p class="disclaimer">
+    <b>본 계산기는 법정 기준 참고용</b>이며, 회사 내규·세금(퇴직소득세)·비과세 수당 포함 여부에 따라 실수령액은 달라질 수 있습니다.
+  </p>
+</main>
+
+<footer class="foot">
+  <div class="inner">
+    <p>퇴직금·연차 계산기 · 근로기준법·근로자퇴직급여 보장법 기준 참고 계산 · <a href="privacy.html">개인정보 처리방침</a></p>
+  </div>
+</footer>
+
+<div class="cta">
+  <div class="inner">
+    <button type="button" id="calc-btn">계산하기</button>
+  </div>
+</div>
+
+<script>
+/* ==CORE-START== */
+var CalcCore = (function () {
+  'use strict';
+
+  var DAY = 86400000;
+  var MONTHLY_HOURS = 209;   // 주 40시간 + 주휴 8시간 → (48 ÷ 7) × 365 ÷ 12 ≈ 209
+  var DAILY_HOURS = 8;
+  var LEAVE_CAP = 25;        // 근로기준법 제60조 제4항 가산 포함 총 25일 한도
+  var FIRST_YEAR_MAX = 11;   // 1년 미만 1개월 개근 시 1일, 최대 11일
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function parseDate(s) {
+    if (typeof s !== 'string') return null;
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
+    if (!m) return null;
+    var y = +m[1], mo = +m[2], d = +m[3];
+    var dt = new Date(Date.UTC(y, mo - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+    return dt;
+  }
+  function toYmd(dt) {
+    return dt.getUTCFullYear() + '-' + pad2(dt.getUTCMonth() + 1) + '-' + pad2(dt.getUTCDate());
+  }
+  function diffDays(a, b) { return Math.round((b.getTime() - a.getTime()) / DAY); }
+  function addDays(dt, n) { return new Date(dt.getTime() + n * DAY); }
+  function daysInMonth(y, m) { return new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); }
+  function addMonthsClamp(dt, n) {
+    var y = dt.getUTCFullYear(), m = dt.getUTCMonth() + n, d = dt.getUTCDate();
+    var ny = y + Math.floor(m / 12), nm = ((m % 12) + 12) % 12;
+    return new Date(Date.UTC(ny, nm, Math.min(d, daysInMonth(ny, nm))));
+  }
+  // 개근 개월수: from + n개월 시점이 to 이하인 최대 n
+  function completeMonths(from, to) {
+    if (to.getTime() <= from.getTime()) return 0;
+    var n = (to.getUTCFullYear() - from.getUTCFullYear()) * 12 + (to.getUTCMonth() - from.getUTCMonth());
+    if (n < 0) n = 0;
+    while (n > 0 && addMonthsClamp(from, n).getTime() > to.getTime()) n--;
+    while (addMonthsClamp(from, n + 1).getTime() <= to.getTime()) n++;
+    return n;
+  }
+  function completeYears(from, to) { return Math.floor(completeMonths(from, to) / 12); }
+
+  /* ---------- 연차 (근로기준법 제60조) ---------- */
+
+  // 계속근로 n년차(1년 이상)의 연차일수: 15일 + 최초 1년 초과 매 2년마다 1일, 총 25일 한도
+  function leaveDaysForYear(n) {
+    if (n < 1) return 0;
+    return Math.min(15 + Math.floor((n - 1) / 2), LEAVE_CAP);
+  }
+
+  // 입사일(기념일) 기준
+  function leaveAnniversary(hire, ref) {
+    var months = completeMonths(hire, ref);
+    var years = Math.floor(months / 12);
+    var out = {
+      basis: 'anniversary',
+      serviceDays: diffDays(hire, ref) + 1,
+      serviceMonths: months,
+      serviceYears: years,
+      firstYear: years < 1,
+      grantDate: null,
+      currentGrant: 0,
+      totalGrant: 0
+    };
+    if (years < 1) {
+      out.currentGrant = Math.min(FIRST_YEAR_MAX, months);
+      out.totalGrant = out.currentGrant;
+      out.grantDate = toYmd(addMonthsClamp(hire, months));
+      out.rule = '1개월 개근 시 1일 (최대 11일)';
+    } else {
+      out.currentGrant = leaveDaysForYear(years);
+      var total = FIRST_YEAR_MAX;
+      for (var k = 1; k <= years; k++) total += leaveDaysForYear(k);
+      out.totalGrant = total;
+      out.grantDate = toYmd(addMonthsClamp(hire, years * 12));
+      out.rule = years + '년차 · 15일 + 가산 ' + (out.currentGrant - 15) + '일';
+    }
+    return out;
+  }
+
+  // 회계연도(1월 1일) 기준: 매년 1/1 부여, 입사 첫해는 월차
+  function leaveFiscal(hire, ref) {
+    var y = ref.getUTCFullYear();
+    var jan1 = new Date(Date.UTC(y, 0, 1));
+    var out = {
+      basis: 'fiscal',
+      refYear: y,
+      firstYear: false,
+      prorated: false,
+      grantDate: toYmd(jan1),
+      currentGrant: 0,
+      totalGrant: 0,
+      prevYearDays: 0,
+      serviceYears: completeYears(hire, ref)
+    };
+    if (hire.getTime() >= jan1.getTime()) {
+      var months = completeMonths(hire, ref);
+      out.firstYear = true;
+      out.currentGrant = Math.min(FIRST_YEAR_MAX, months);
+      out.totalGrant = out.currentGrant;
+      out.grantDate = toYmd(addMonthsClamp(hire, months));
+      out.rule = '입사 첫해 · 1개월 개근 시 1일 (최대 11일)';
+      out.prevYearDays = 0;
+      return out;
+    }
+    var yearsAtJan1 = completeYears(hire, jan1);
+    if (yearsAtJan1 >= 1) {
+      out.currentGrant = leaveDaysForYear(yearsAtJan1);
+      out.rule = '회계연도 ' + yearsAtJan1 + '년차 ' + out.currentGrant + '일';
+    } else {
+      var prevEnd = new Date(Date.UTC(y - 1, 11, 31));
+      var daysPrev = Math.max(0, diffDays(hire, prevEnd) + 1);
+      out.currentGrant = Math.floor(15 * daysPrev / 365);
+      out.prorated = true;
+      out.prevYearDays = daysPrev;
+      out.rule = '전년도 재직 ' + daysPrev + '일 비례 ' + out.currentGrant + '일';
+    }
+    // 재직 기간 총 발생(참고)
+    var total = Math.min(FIRST_YEAR_MAX, completeMonths(hire, new Date(Date.UTC(hire.getUTCFullYear(), 11, 31))));
+    for (var yy = hire.getUTCFullYear() + 1; yy <= y; yy++) {
+      var j = new Date(Date.UTC(yy, 0, 1));
+      var yyrs = completeYears(hire, j);
+      if (yyrs >= 1) {
+        total += leaveDaysForYear(yyrs);
+      } else {
+        var pe = new Date(Date.UTC(yy - 1, 11, 31));
+        total += Math.floor(15 * Math.max(0, diffDays(hire, pe) + 1) / 365);
+      }
+    }
+    out.totalGrant = total;
+    return out;
+  }
+
+  // 퇴사 정산: 입사일 기준
+  function settleAnniversary(hire, exit, used) {
+    var l = leaveAnniversary(hire, exit);
+    return {
+      basis: 'anniversary',
+      granted: l.currentGrant,
+      settled: l.currentGrant,
+      used: used,
+      days: Math.max(0, l.currentGrant - used),
+      grantDate: l.grantDate,
+      totalGrant: l.totalGrant
+    };
+  }
+
+  // 퇴사 정산: 회계연도 기준(당해 부여분 × 재직일수/365, 소수점 버림)
+  function settleFiscal(hire, exit, used) {
+    var f = leaveFiscal(hire, exit);
+    var settled = f.currentGrant;
+    if (!f.firstYear) {
+      var jan1 = new Date(Date.UTC(exit.getUTCFullYear(), 0, 1));
+      var worked = diffDays(jan1, exit) + 1;
+      settled = Math.floor(f.currentGrant * worked / 365);
+    }
+    return {
+      basis: 'fiscal',
+      granted: f.currentGrant,
+      settled: settled,
+      used: used,
+      days: Math.max(0, settled - used),
+      grantDate: f.grantDate,
+      totalGrant: f.totalGrant
+    };
+  }
+
+  function dailyOrdinaryFromMonthly(monthly) {
+    return monthly * DAILY_HOURS / MONTHLY_HOURS;
+  }
+
+  /* ---------- 퇴직금 (근로자퇴직급여 보장법 제8조) ---------- */
+
+  function severance(o) {
+    var hire = o.hire, exit = o.exit;
+    var serviceDays = diffDays(hire, exit) + 1;
+    // 퇴직일 이전 3개월: 퇴사일 포함, 3개월 전 같은 날의 다음 날부터
+    var start = addDays(addMonthsClamp(exit, -3), 1);
+    var days3m = diffDays(start, exit) + 1;
+    var wage3m = o.wage3m || 0;
+    var bonusPart = (o.annualBonus || 0) * 3 / 12;
+    var leavePart = (o.prevLeavePay || 0) * 3 / 12;
+    var total = wage3m + bonusPart + leavePart;
+    var avgDaily = days3m > 0 ? total / days3m : 0;
+    var ordinary = o.dailyOrdinary || 0;
+    var applied = avgDaily;
+    var basis = 'average';
+    if (ordinary > avgDaily) { applied = ordinary; basis = 'ordinary'; }
+    var eligible = serviceDays >= 365;
+    var pay = eligible ? Math.floor(applied * 30 * serviceDays / 365) : 0;
+    return {
+      serviceDays: serviceDays,
+      periodStart: toYmd(start),
+      periodEnd: toYmd(exit),
+      days3m: days3m,
+      wage3m: wage3m,
+      bonusPart: bonusPart,
+      leavePart: leavePart,
+      total3m: total,
+      avgDaily: avgDaily,
+      ordinaryDaily: ordinary,
+      appliedDaily: applied,
+      basis: basis,
+      eligible: eligible,
+      pay: pay
+    };
+  }
+
+  return {
+    DAY: DAY,
+    MONTHLY_HOURS: MONTHLY_HOURS,
+    parseDate: parseDate,
+    toYmd: toYmd,
+    diffDays: diffDays,
+    addDays: addDays,
+    addMonthsClamp: addMonthsClamp,
+    completeMonths: completeMonths,
+    completeYears: completeYears,
+    leaveDaysForYear: leaveDaysForYear,
+    leaveAnniversary: leaveAnniversary,
+    leaveFiscal: leaveFiscal,
+    settleAnniversary: settleAnniversary,
+    settleFiscal: settleFiscal,
+    dailyOrdinaryFromMonthly: dailyOrdinaryFromMonthly,
+    severance: severance
+  };
+})();
+/* ==CORE-END== */
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var C = CalcCore;
+  var $ = function (id) { return document.getElementById(id); };
+
+  var state = {
+    tab: 'leave',
+    lvBasis: 'anniversary',
+    lvPurpose: 'current',
+    lvWageMode: 'month',
+    svWageMode: 'month',
+    shown: { leave: false, severance: false }
+  };
+
+  /* ---------- helpers ---------- */
+  function num(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : 0;
+    if (!v) return 0;
+    var n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+    return isFinite(n) ? n : 0;
+  }
+  function won(n) {
+    if (!isFinite(n)) n = 0;
+    return Math.round(n).toLocaleString('ko-KR');
+  }
+  function money(n) {
+    return won(n) + '원';
+  }
+  function days1(n) {
+    var r = Math.round(n * 10) / 10;
+    return (r % 1 === 0 ? String(r) : r.toFixed(1)) + '일';
+  }
+  function todayStr() {
+    var d = new Date();
+    var p = function (x) { return (x < 10 ? '0' : '') + x; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  function fmtDate(s) {
+    if (!s) return '';
+    var p = s.split('-');
+    return p[0] + '.' + p[1] + '.' + p[2];
+  }
+  function periodText(a, b) {
+    var p1 = a.split('-'), p2 = b.split('-');
+    return p1[0] + '.' + p1[1] + '.' + p1[2] + ' ~ ' + p2[0] + '.' + p2[1] + '.' + p2[2];
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function groupMoneyInput(el) {
+    el.addEventListener('blur', function () {
+      var v = num(el.value);
+      if (el.value.trim() === '') { el.value = ''; return; }
+      el.value = v.toLocaleString('ko-KR');
+    });
+  }
+  function setSeg(id, value) {
+    var box = $(id);
+    if (!box) return;
+    [].forEach.call(box.querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-v') === value ? 'true' : 'false');
+    });
+  }
+
+  /* ---------- tabs ---------- */
+  function selectTab(name) {
+    state.tab = name;
+    [].forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+      b.setAttribute('aria-selected', b.getAttribute('data-tab') === name ? 'true' : 'false');
+    });
+    $('tab-leave').hidden = name !== 'leave';
+    $('tab-severance').hidden = name !== 'severance';
+    $('calc-btn').textContent = name === 'leave' ? '연차 계산하기' : '퇴직금 계산하기';
+    window.scrollTo(0, 0);
+    if (state.shown[name]) calculate(false);
+  }
+  [].forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+    b.addEventListener('click', function () { selectTab(b.getAttribute('data-tab')); });
+  });
+
+  /* ---------- segmented controls ---------- */
+  $('lv-basis').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    state.lvBasis = b.getAttribute('data-v'); setSeg('lv-basis', state.lvBasis); calculate(true);
+  });
+  $('lv-purpose').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    state.lvPurpose = b.getAttribute('data-v'); setSeg('lv-purpose', state.lvPurpose); calculate(true);
+  });
+  $('lv-wage-mode').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    state.lvWageMode = b.getAttribute('data-v'); setSeg('lv-wage-mode', state.lvWageMode);
+    var month = state.lvWageMode === 'month';
+    $('lv-month-wrap').hidden = !month; $('lv-day-wrap').hidden = month; updateHints(); calculate(true);
+  });
+  $('sv-wage-mode').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    state.svWageMode = b.getAttribute('data-v'); setSeg('sv-wage-mode', state.svWageMode);
+    var month = state.svWageMode === 'month';
+    $('sv-month-wrap').hidden = !month; $('sv-day-wrap').hidden = month; updateHints(); calculate(true);
+  });
+
+  /* ---------- live hints ---------- */
+  function updateHints() {
+    var lm = num($('lv-month-wage').value);
+    var ld = lm > 0 ? C.dailyOrdinaryFromMonthly(lm) : 0;
+    $('lv-day-from-month').innerHTML = '월 통상임금 ÷ 209 × 8 = <b>' + money(ld) + '</b>';
+    var sm = num($('sv-month-wage').value);
+    var sd = sm > 0 ? C.dailyOrdinaryFromMonthly(sm) : 0;
+    $('sv-day-from-month').innerHTML = '윗줄 월급 ÷ 209 × 8 = <b>' + money(sd) + '</b>';
+  }
+
+  // 월급 입력 → 3개월 임금총액 자동 채우기
+  var wageAuto = true;
+  $('sv-wage3m').addEventListener('input', function () { wageAuto = false; });
+  $('sv-month-wage').addEventListener('input', function () {
+    if (wageAuto) {
+      var m = num($('sv-month-wage').value);
+      $('sv-wage3m').value = m > 0 ? (m * 3).toLocaleString('ko-KR') : '';
+    }
+    updateHints(); liveCalc();
+  });
+
+  function updateServiceDays() {
+    var h = C.parseDate($('sv-hire').value), x = C.parseDate($('sv-exit').value);
+    if (!h || !x || x < h) { $('sv-service-days').textContent = '—'; $('sv-days3m').textContent = '—'; $('sv-period').textContent = '3개월 기간'; return; }
+    var sd = C.diffDays(h, x) + 1;
+    $('sv-service-days').innerHTML = sd + '일 <span class="badge ' + (sd >= 365 ? 'ok' : 'gray') + '">' + (sd >= 365 ? '1년 이상' : '1년 미만') + '</span>';
+    var start = C.addDays(C.addMonthsClamp(x, -3), 1);
+    var d3 = C.diffDays(start, x) + 1;
+    $('sv-period').textContent = periodText(C.toYmd(start), C.toYmd(x));
+    $('sv-days3m').textContent = d3 + '일';
+  }
+
+  /* ---------- input wiring ---------- */
+  ['sv-hire', 'sv-exit'].forEach(function (id) { $(id).addEventListener('change', function () { updateServiceDays(); liveCalc(); }); });
+  ['sv-wage3m', 'sv-bonus', 'sv-leavepay', 'sv-day-wage', 'lv-hire', 'lv-ref', 'lv-used', 'lv-month-wage', 'lv-day-wage'].forEach(function (id) {
+    $(id).addEventListener('input', function () { updateHints(); liveCalc(); });
+  });
+  ['sv-wage3m', 'sv-month-wage', 'sv-bonus', 'sv-leavepay', 'sv-day-wage', 'lv-month-wage', 'lv-day-wage'].forEach(function (id) {
+    groupMoneyInput($(id));
+  });
+
+  function liveCalc() {
+    if (state.shown[state.tab]) calculate(false);
+  }
+
+  /* ---------- render: 연차 ---------- */
+  function renderLeave() {
+    var box = $('lv-result');
+    var hire = C.parseDate($('lv-hire').value);
+    var ref = C.parseDate($('lv-ref').value);
+    if (!hire || !ref) {
+      box.innerHTML = '<div class="empty">입사일과 기준일을 입력하면 연차가 계산됩니다.</div>';
+      return;
+    }
+    if (ref < hire) {
+      box.innerHTML = '<div class="result"><div class="warn"><span class="ico">⚠️</span><span>기준일이 입사일보다 빠릅니다. 날짜를 확인해 주세요.</span></div></div>';
+      return;
+    }
+    var used = Math.max(0, num($('lv-used').value));
+    var dailyWage = state.lvWageMode === 'month'
+      ? C.dailyOrdinaryFromMonthly(num($('lv-month-wage').value))
+      : num($('lv-day-wage').value);
+
+    var cur = state.lvBasis === 'anniversary' ? C.leaveAnniversary(hire, ref) : C.leaveFiscal(hire, ref);
+    var ann = C.settleAnniversary(hire, ref, used);
+    var fis = C.settleFiscal(hire, ref, used);
+    var isExit = state.lvPurpose === 'exit';
+    var sel = state.lvBasis === 'anniversary' ? ann : fis;
+    var granted = isExit ? sel.settled : cur.currentGrant;
+    var remain = isExit ? sel.days : Math.max(0, granted - used);
+    var pay = Math.round(remain * dailyWage);
+    var payAnn = Math.round(ann.days * dailyWage);
+    var payFis = Math.round(fis.days * dailyWage);
+
+    var months = C.completeMonths(hire, ref);
+    var yrs = Math.floor(months / 12), mo = months % 12;
+    var serviceLabel = (yrs > 0 ? yrs + '년 ' : '') + (mo > 0 ? mo + '개월' : (yrs > 0 ? '' : months + '개월'));
+    if (yrs > 0 && mo === 0) serviceLabel = yrs + '년';
+
+    var ruleText = cur.rule || '';
+    var grantLine = cur.firstYear
+      ? ruleText
+      : (fmtDate(cur.grantDate) + ' 부여 · ' + ruleText);
+    var basisName = state.lvBasis === 'anniversary' ? '입사일 기준' : '회계연도 기준';
+    var diff = fis.days - ann.days;
+    var cmpNote;
+    if (diff === 0) {
+      cmpNote = '두 기준의 정산일수가 같습니다.';
+    } else if (diff > 0) {
+      cmpNote = '회계연도 기준이 <b>' + diff + '일</b> 더 많습니다. 회사가 회계연도 기준으로 운영한다면 이 기준으로 정산받을 수 있습니다.';
+    } else {
+      cmpNote = '입사일 기준이 <b>' + (-diff) + '일</b> 더 많습니다. 입사일 기준 정산이 유리합니다.';
+    }
+
+    var html = '';
+    html += '<div class="result reveal">';
+    html += '<h2>계산 결과 <span class="badge gray">' + basisName + '</span> <span class="badge gray">' + (isExit ? '퇴사 정산' : '재직 중') + '</span></h2>';
+    html += '<div class="kpi accent"><span class="label">' + (isExit ? '퇴사 시 정산 연차' : '잔여 연차') + '</span><span class="value" id="out-remain">' + days1(remain) + '</span>';
+    html += '<span class="formula">' + (isExit ? '정산 발생 ' : '발생 ') + days1(granted) + ' − 사용 ' + days1(used) + '</span></div>';
+    html += '<div class="kpi"><span class="label">' + (isExit ? '퇴사 시 연차수당' : '예상 미사용 연차수당') + '</span><span class="value" id="out-pay">' + won(pay) + '<small>원</small></span>';
+    html += '<span class="formula">1일 통상임금 ' + money(dailyWage) + ' × ' + days1(remain) + '</span></div>';
+    html += '<div class="rows">';
+    html += '<div class="row"><span class="k">근속기간</span><span class="v">' + serviceLabel + ' <span style="color:#94a3b8;font-weight:600">(' + (C.diffDays(hire, ref) + 1) + '일)</span></span></div>';
+    html += '<div class="row"><span class="k">' + (isExit ? '정산 대상 연차' : '당해 발생 연차') + '</span><span class="v" id="out-granted">' + days1(granted) + '</span></div>';
+    html += '<div class="row"><span class="k">발생 근거</span><span class="v" style="font-weight:600">' + esc(grantLine) + '</span></div>';
+    html += '<div class="row"><span class="k">재직 중 총 발생</span><span class="v">' + days1(cur.totalGrant) + '</span></div>';
+    html += '<div class="row"><span class="k">1일 통상임금</span><span class="v">' + money(dailyWage) + '</span></div>';
+    html += '</div>';
+    html += '<p class="note">총 발생은 참고값입니다. 연차휴가는 1년간 사용하지 않으면 소멸하며(회사 취업규칙에 따라 다름), 미사용 수당 청구권의 소멸시효는 3년입니다.</p>';
+    html += '</div>';
+
+    html += '<div class="result"><h2>퇴사 정산 비교 <span class="badge">입사일 vs 회계연도</span></h2>';
+    html += '<p class="note" style="margin:0 0 10px">기준일에 퇴사한다고 가정하고, 사용 ' + days1(used) + '을 뺀 정산일수와 수당을 비교합니다.</p>';
+    html += '<div class="cmp">';
+    html += '<div class="cmp-row' + (state.lvBasis === 'anniversary' ? ' on' : '') + '"><span class="k">입사일 기준</span><span class="v" id="cmp-ann">' + days1(ann.days) + '<small>' + money(payAnn) + '</small></span></div>';
+    html += '<div class="cmp-row' + (state.lvBasis === 'fiscal' ? ' on' : '') + '"><span class="k">회계연도 기준</span><span class="v" id="cmp-fis">' + days1(fis.days) + '<small>' + money(payFis) + '</small></span></div>';
+    html += '</div>';
+    html += '<p class="note">' + cmpNote + '</p>';
+    html += '<p class="note" style="margin-top:6px">회계연도 기준은 1월 1일 부여분 × (1월 1일~기준일 ÷ 365)로 계산하고 소수점 이하는 버렸습니다. 회사 규정에 따라 1일 정도 차이가 날 수 있습니다.</p>';
+    html += '<details class="process"><summary>정산 계산 과정</summary><div class="body"><ol class="steps">';
+    html += '<li>입사일 기준: ' + fmtDate(ann.grantDate) + '에 <b>' + days1(ann.granted) + '</b> 발생 → 사용 ' + days1(used) + ' 차감 = <b>' + days1(ann.days) + '</b></li>';
+    html += '<li>회계연도 기준: 당해 부여 <b>' + days1(fis.granted) + '</b> × 재직일수 비례 → <b>' + days1(fis.settled) + '</b> → 사용 ' + days1(used) + ' 차감 = <b>' + days1(fis.days) + '</b></li>';
+    html += '<li>수당 = ' + (isExit ? '정산 연차 ' : '잔여 ') + days1(remain) + ' × 1일 통상임금 ' + money(dailyWage) + ' = <b>' + money(pay) + '</b></li>';
+    html += '</ol></div></details>';
+    html += '</div>';
+    box.innerHTML = html;
+  }
+
+  /* ---------- render: 퇴직금 ---------- */
+  function renderSeverance() {
+    var box = $('sv-result');
+    var hire = C.parseDate($('sv-hire').value);
+    var exit = C.parseDate($('sv-exit').value);
+    if (!hire || !exit) {
+      box.innerHTML = '<div class="empty">입사일과 퇴사일을 입력하면 퇴직금이 계산됩니다.</div>';
+      return;
+    }
+    if (exit < hire) {
+      box.innerHTML = '<div class="result"><div class="warn"><span class="ico">⚠️</span><span>퇴사일이 입사일보다 빠릅니다. 날짜를 확인해 주세요.</span></div></div>';
+      return;
+    }
+    var monthly = num($('sv-month-wage').value);
+    var dailyOrdinary = state.svWageMode === 'month'
+      ? C.dailyOrdinaryFromMonthly(monthly)
+      : num($('sv-day-wage').value);
+
+    var r = C.severance({
+      hire: hire,
+      exit: exit,
+      wage3m: num($('sv-wage3m').value),
+      annualBonus: num($('sv-bonus').value),
+      prevLeavePay: num($('sv-leavepay').value),
+      dailyOrdinary: dailyOrdinary
+    });
+
+    var html = '';
+    if (!r.eligible) {
+      html += '<div class="result reveal"><h2>퇴직금</h2>';
+      html += '<div class="kpi"><span class="label">예상 세전 퇴직금</span><span class="value" id="out-severance">0<small>원</small></span></div>';
+      html += '<div class="rows"><div class="row"><span class="k">재직일수</span><span class="v">' + r.serviceDays + '일</span></div></div>';
+      html += '<div style="height:12px"></div>';
+      html += '<div class="warn"><span class="ico">⚠️</span><span>계속근로기간이 1년(365일) 미만이라 퇴직금이 발생하지 않습니다. (현재 ' + r.serviceDays + '일 · ' + (365 - r.serviceDays) + '일 부족)</span></div>';
+      html += '</div>';
+      html += disclaimerBox();
+      box.innerHTML = html;
+      return;
+    }
+
+    var basisLabel = r.basis === 'ordinary' ? '통상임금 적용' : '평균임금 적용';
+    var basisReason = r.basis === 'ordinary'
+      ? '1일 통상임금이 1일 평균임금보다 커서 통상임금을 적용했습니다. (근로기준법 제2조 제2항)'
+      : '1일 평균임금이 1일 통상임금보다 커서 평균임금을 적용했습니다.';
+
+    html += '<div class="result reveal"><h2>계산 결과 <span class="badge">' + basisLabel + '</span></h2>';
+    html += '<div class="kpi accent"><span class="label">예상 세전 퇴직금</span><span class="value" id="out-severance">' + won(r.pay) + '<small>원</small></span>';
+    html += '<span class="formula">' + money(r.appliedDaily) + ' × 30일 × (' + r.serviceDays + ' ÷ 365)</span></div>';
+    html += '<div class="rows">';
+    html += '<div class="row"><span class="k">적용 1일 임금</span><span class="v" id="out-applied">' + money(r.appliedDaily) + ' <span class="badge">' + basisLabel + '</span></span></div>';
+    html += '<div class="row"><span class="k">1일 평균임금</span><span class="v">' + money(r.avgDaily) + '</span></div>';
+    html += '<div class="row"><span class="k">1일 통상임금</span><span class="v">' + money(r.ordinaryDaily) + '</span></div>';
+    html += '<div class="row"><span class="k">재직일수</span><span class="v">' + r.serviceDays + '일</span></div>';
+    html += '<div class="row"><span class="k">3개월 임금총액</span><span class="v">' + money(r.total3m) + '</span></div>';
+    html += '<div class="row"><span class="k">3개월 총일수</span><span class="v">' + r.days3m + '일</span></div>';
+    html += '</div>';
+    html += '<p class="note">' + esc(basisReason) + '</p>';
+
+    html += '<details class="process"><summary>계산 과정 자세히</summary><div class="body"><ol class="steps">';
+    html += '<li>재직일수: ' + fmtDate(C.toYmd(hire)) + ' ~ ' + fmtDate(C.toYmd(exit)) + ' (초일 산입) = <b>' + r.serviceDays + '일</b></li>';
+    html += '<li>평균임금 산정기간: ' + periodText(r.periodStart, r.periodEnd) + ' = <b>' + r.days3m + '일</b></li>';
+    html += '<li>3개월 임금총액: 임금 ' + money(r.wage3m);
+    if (r.bonusPart > 0) html += ' + 상여금 3/12 ' + money(r.bonusPart);
+    if (r.leavePart > 0) html += ' + 연차수당 3/12 ' + money(r.leavePart);
+    html += ' = <b>' + money(r.total3m) + '</b></li>';
+    html += '<li>1일 평균임금: ' + money(r.total3m) + ' ÷ ' + r.days3m + '일 = <b>' + money(r.avgDaily) + '</b></li>';
+    html += '<li>1일 통상임금: ' + (state.svWageMode === 'month'
+      ? money(monthly) + ' ÷ 209 × 8 = <b>' + money(r.ordinaryDaily) + '</b>'
+      : '직접 입력 <b>' + money(r.ordinaryDaily) + '</b>') + '</li>';
+    html += '<li>적용 임금: 둘 중 큰 금액 <b>' + money(r.appliedDaily) + '</b> (' + basisLabel + ')</li>';
+    html += '<li>퇴직금: ' + money(r.appliedDaily) + ' × 30 × (' + r.serviceDays + ' ÷ 365) = <b>' + money(r.pay) + '</b> (원 미만 절사)</li>';
+    html += '</ol></div></details>';
+    html += '</div>';
+    html += disclaimerBox();
+    box.innerHTML = html;
+  }
+
+  function disclaimerBox() {
+    return '<p class="disclaimer"><b>참고용 안내</b> · 본 계산기는 법정 기준 참고용이며, 회사 내규·세금(퇴직소득세)·비과세 수당 포함 여부에 따라 실수령액은 달라질 수 있습니다. 퇴직금은 1일 평균임금과 1일 통상임금 중 큰 금액으로 계산했습니다.</p>';
+  }
+
+  /* ---------- calculate ---------- */
+  function calculate(scroll) {
+    if (state.tab === 'leave') {
+      renderLeave();
+    } else {
+      renderSeverance();
+    }
+    state.shown[state.tab] = true;
+    if (scroll) {
+      var el = state.tab === 'leave' ? $('lv-result') : $('sv-result');
+      var y = el.getBoundingClientRect().top + window.pageYOffset - 108;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  }
+  $('calc-btn').addEventListener('click', function () { calculate(true); });
+
+  /* ---------- init ---------- */
+  $('lv-ref').value = todayStr();
+  $('sv-exit').value = todayStr();
+  updateHints();
+  updateServiceDays();
+  renderLeave();
+  renderSeverance();
+})();
+</script>
+</body>
+</html>
