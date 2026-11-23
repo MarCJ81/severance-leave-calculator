@@ -93,7 +93,7 @@ GitHub Pages 주소는 `https://marcj81.github.io/severance-leave-calculator/` �
 
 ## 계산 엔진 — decimal.js (MIT)
 
-- 평균임금·퇴직금·퇴직소득세·연차 일할 계산을 전부 `decimal.js`(MIT, v10.6.0) 고정밀 연산으로 처리합니다. `assets/vendor/decimal.min.js`는 저장소 안 파일이라 외부 요청이 없습니다.
+- 평균임금·퇴직금·퇴직소득세·연차 일할 계산을 전부 `decimal.js`(MIT, v10.6.0) 고정밀 연산으로 처리합니다. `assets/vendor/decimal.js`는 저장소 안 파일이라 외부 요청이 없습니다.
 - `월급 ÷ 209 × 8` 같은 일할 통상임금, `퇴직금 = 평균임금 × 30 × 재직일수 ÷ 365`, 환산급여·산출세액의 원 단위 절사를 모두 유리수 순서로 계산해 1원 드리프트를 없앴습니다.
 - 검증: `node test.js` 120개 단언, `python3 uitest.py` 실제 Chrome 71개 통과(신규 엔진 브라우저 검증 포함).
 - 라이선스 고지: `THIRD-PARTY-NOTICES.md`.

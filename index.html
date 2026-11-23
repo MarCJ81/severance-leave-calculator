@@ -699,7 +699,7 @@ details.process .body{padding:0 12px 12px;font-size:11.5px;color:var(--ink-2)}
 
 <noscript><p style="padding:12px 16px;font-size:13px">계산하려면 브라우저에서 JavaScript를 켜 주세요.</p></noscript>
 
-<script src="assets/vendor/decimal.min.js"></script>
+<script src="assets/vendor/decimal.js"></script>
 <script>
 /* ==CORE-START== */
 var CalcCore = (function () {
@@ -716,7 +716,7 @@ var CalcCore = (function () {
      엔진이 없으면 조용히 틀린 금액을 내지 않도록 즉시 실패한다. */
   var DEC = (function () {
     if (typeof Decimal !== 'function') {
-      throw new Error('decimal.js 엔진을 불러오지 못했습니다 (assets/vendor/decimal.min.js)');
+      throw new Error('decimal.js 엔진을 불러오지 못했습니다 (assets/vendor/decimal.js)');
     }
     Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP, toExpNeg: -40, toExpPos: 40 });
     function of(v) {
