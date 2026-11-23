@@ -699,6 +699,7 @@ details.process .body{padding:0 12px 12px;font-size:11.5px;color:var(--ink-2)}
 
 <noscript><p style="padding:12px 16px;font-size:13px">계산하려면 브라우저에서 JavaScript를 켜 주세요.</p></noscript>
 
+<script src="assets/vendor/decimal.min.js"></script>
 <script>
 /* ==CORE-START== */
 var CalcCore = (function () {
@@ -709,6 +710,37 @@ var CalcCore = (function () {
   var DAILY_HOURS = 8;
   var LEAVE_CAP = 25;        // 근로기준법 제60조 제4항 가산 포함 총 25일 한도
   var FIRST_YEAR_MAX = 11;   // 1년 미만 1개월 개근 시 1일, 최대 11일
+
+  /* ── decimal.js 고정밀 연산 (MikeMcl/decimal.js, MIT) ──────────────
+     평균임금·환산급여·일할 계산의 부동소수 오차와 원단위 절사 드리프트를 없앤다.
+     엔진이 없으면 조용히 틀린 금액을 내지 않도록 즉시 실패한다. */
+  var DEC = (function () {
+    if (typeof Decimal !== 'function') {
+      throw new Error('decimal.js 엔진을 불러오지 못했습니다 (assets/vendor/decimal.min.js)');
+    }
+    Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP, toExpNeg: -40, toExpPos: 40 });
+    function of(v) {
+      if (v instanceof Decimal) return v;
+      if (v === null || v === undefined || v === '') return new Decimal(0);
+      if (typeof v === 'number') return new Decimal(isFinite(v) ? v : 0);
+      var s = String(v).replace(/,/g, '').trim();
+      try { return new Decimal(s); } catch (e) { return new Decimal(0); }
+    }
+    return {
+      of: of,
+      engine: 'decimal.js v10.6.0',
+      isDecimal: typeof Decimal.isDecimal === 'function' && Decimal.isDecimal(new Decimal(1)),
+      plus: function (a, b) { return of(a).plus(of(b)); },
+      minus: function (a, b) { return of(a).minus(of(b)); },
+      times: function (a, b) { return of(a).times(of(b)); },
+      div: function (a, b) { return of(a).div(of(b)); },
+      roundWon: function (v) { return of(v).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toNumber(); },
+      floorWon: function (v) { return of(v).toDecimalPlaces(0, Decimal.ROUND_FLOOR).toNumber(); },
+      ceilWon: function (v) { return of(v).toDecimalPlaces(0, Decimal.ROUND_CEIL).toNumber(); },
+      floor10: function (v) { return of(v).div(10).toDecimalPlaces(0, Decimal.ROUND_FLOOR).times(10).toNumber(); },
+      roundDp: function (v, dp) { return of(v).toDecimalPlaces(dp || 0, Decimal.ROUND_HALF_UP); }
+    };
+  })();
 
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -813,7 +845,7 @@ var CalcCore = (function () {
     } else {
       var prevEnd = new Date(Date.UTC(y - 1, 11, 31));
       var daysPrev = Math.max(0, diffDays(hire, prevEnd) + 1);
-      out.currentGrant = Math.floor(15 * daysPrev / 365);
+      out.currentGrant = DEC.floorWon(DEC.div(DEC.times(15, daysPrev), 365));
       out.prorated = true;
       out.prevYearDays = daysPrev;
       out.rule = '전년도 재직 ' + daysPrev + '일 비례 ' + out.currentGrant + '일';
@@ -827,7 +859,7 @@ var CalcCore = (function () {
         total += leaveDaysForYear(yyrs);
       } else {
         var pe = new Date(Date.UTC(yy - 1, 11, 31));
-        total += Math.floor(15 * Math.max(0, diffDays(hire, pe) + 1) / 365);
+        total += DEC.floorWon(DEC.div(DEC.times(15, Math.max(0, diffDays(hire, pe) + 1)), 365));
       }
     }
     out.totalGrant = total;
@@ -855,7 +887,7 @@ var CalcCore = (function () {
     if (!f.firstYear) {
       var jan1 = new Date(Date.UTC(exit.getUTCFullYear(), 0, 1));
       var worked = diffDays(jan1, exit) + 1;
-      settled = Math.floor(f.currentGrant * worked / 365);
+      settled = DEC.floorWon(DEC.div(DEC.times(f.currentGrant, worked), 365));
     }
     return {
       basis: 'fiscal',
@@ -869,7 +901,7 @@ var CalcCore = (function () {
   }
 
   function dailyOrdinaryFromMonthly(monthly) {
-    return monthly * DAILY_HOURS / MONTHLY_HOURS;
+    return DEC.div(DEC.times(monthly, DAILY_HOURS), MONTHLY_HOURS).toNumber();
   }
 
   /* ---------- 퇴직금 (근로자퇴직급여 보장법 제8조) ---------- */
@@ -880,26 +912,26 @@ var CalcCore = (function () {
     // 퇴직일 이전 3개월: 퇴사일 포함, 3개월 전 같은 날의 다음 날부터
     var start = addDays(addMonthsClamp(exit, -3), 1);
     var days3m = diffDays(start, exit) + 1;
-    var wage3m = o.wage3m || 0;
-    var bonusPart = (o.annualBonus || 0) * 3 / 12;
-    var leavePart = (o.prevLeavePay || 0) * 3 / 12;
-    var total = wage3m + bonusPart + leavePart;
-    var avgDaily = days3m > 0 ? total / days3m : 0;
+    var wage3m = DEC.of(o.wage3m || 0);
+    var bonusPart = DEC.div(DEC.times(o.annualBonus || 0, 3), 12);
+    var leavePart = DEC.div(DEC.times(o.prevLeavePay || 0, 3), 12);
+    var total = wage3m.plus(bonusPart).plus(leavePart);
+    var avgDaily = days3m > 0 ? DEC.div(total, days3m).toNumber() : 0;
     var ordinary = o.dailyOrdinary || 0;
     var applied = avgDaily;
     var basis = 'average';
     if (ordinary > avgDaily) { applied = ordinary; basis = 'ordinary'; }
     var eligible = serviceDays >= 365;
-    var pay = eligible ? Math.floor(applied * 30 * serviceDays / 365) : 0;
+    var pay = eligible ? DEC.floorWon(DEC.div(DEC.times(DEC.times(applied, 30), serviceDays), 365)) : 0;
     return {
       serviceDays: serviceDays,
       periodStart: toYmd(start),
       periodEnd: toYmd(exit),
       days3m: days3m,
-      wage3m: wage3m,
-      bonusPart: bonusPart,
-      leavePart: leavePart,
-      total3m: total,
+      wage3m: wage3m.toNumber(),
+      bonusPart: bonusPart.toNumber(),
+      leavePart: leavePart.toNumber(),
+      total3m: total.toNumber(),
       avgDaily: avgDaily,
       ordinaryDaily: ordinary,
       appliedDaily: applied,
@@ -921,19 +953,20 @@ var CalcCore = (function () {
   }
 
   function serviceYearDeduction(years) {
-    var exact = Math.max(0, years);
-    if (exact <= 5) return 1000000 * exact;
-    if (exact <= 10) return 5000000 + 2000000 * (exact - 5);
-    if (exact <= 20) return 15000000 + 2500000 * (exact - 10);
-    return 40000000 + 3000000 * (exact - 20);
+    var exact = DEC.of(Math.max(0, years));
+    if (exact.lte(5)) return DEC.roundWon(exact.times(1000000));
+    if (exact.lte(10)) return DEC.roundWon(exact.minus(5).times(2000000).plus(5000000));
+    if (exact.lte(20)) return DEC.roundWon(exact.minus(10).times(2500000).plus(15000000));
+    return DEC.roundWon(exact.minus(20).times(3000000).plus(40000000));
   }
 
   function convertedSalaryDeduction(converted) {
-    if (converted <= 8000000) return converted;
-    if (converted <= 70000000) return 8000000 + (converted - 8000000) * 0.60;
-    if (converted <= 100000000) return 45200000 + (converted - 70000000) * 0.55;
-    if (converted <= 300000000) return 61700000 + (converted - 100000000) * 0.45;
-    return 151700000 + (converted - 300000000) * 0.35;
+    var c = DEC.of(converted);
+    if (c.lte(8000000)) return c.toNumber();
+    if (c.lte(70000000)) return c.minus(8000000).times('0.60').plus(8000000).toNumber();
+    if (c.lte(100000000)) return c.minus(70000000).times('0.55').plus(45200000).toNumber();
+    if (c.lte(300000000)) return c.minus(100000000).times('0.45').plus(61700000).toNumber();
+    return c.minus(300000000).times('0.35').plus(151700000).toNumber();
   }
 
   var TAX_BRACKETS = [
@@ -955,19 +988,19 @@ var CalcCore = (function () {
 
   function severanceIncomeTax(pay, years) {
     var y = Math.max(1, Math.round(years || 1));
-    var amount = Math.max(0, pay || 0);
-    var deduction = Math.min(serviceYearDeduction(y), amount);
-    var afterDeduction = Math.max(0, amount - deduction);
-    var converted = afterDeduction / y * 12;
+    var amount = DEC.of(Math.max(0, pay || 0));
+    var deduction = Math.min(serviceYearDeduction(y), amount.toNumber());
+    var afterDeduction = Decimal.max(0, amount.minus(deduction));
+    var converted = DEC.div(afterDeduction.times(12), y).toNumber();
     var convertedDed = Math.min(convertedSalaryDeduction(converted), converted);
     var taxBase = Math.max(0, converted - convertedDed);
     var bracket = basicRate(taxBase);
-    var convertedTax = Math.max(0, Math.floor(taxBase * bracket.rate - bracket.progressive));
-    var incomeTax = Math.floor(convertedTax / 12 * y);
-    var localTax = Math.floor(incomeTax * 0.1);
+    var convertedTax = Math.max(0, DEC.floorWon(DEC.minus(DEC.times(taxBase, bracket.rate), bracket.progressive)));
+    var incomeTax = DEC.floorWon(DEC.div(DEC.times(convertedTax, y), 12));
+    var localTax = DEC.floorWon(DEC.times(incomeTax, '0.1'));
     return {
       years: y,
-      amount: amount,
+      amount: amount.toNumber(),
       deduction: deduction,
       afterDeduction: afterDeduction,
       converted: converted,
@@ -986,6 +1019,7 @@ var CalcCore = (function () {
   return {
     DAY: DAY,
     MONTHLY_HOURS: MONTHLY_HOURS,
+    dec: DEC,
     parseDate: parseDate,
     toYmd: toYmd,
     diffDays: diffDays,
