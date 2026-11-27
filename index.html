@@ -491,8 +491,8 @@ details.process .body{padding:0 12px 12px;font-size:11.5px;color:var(--ink-2)}
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero-copy">
       <span class="eyebrow"><b>2026</b> 근로기준법 제60조 · 퇴직급여법 제8조</span>
-      <h1 id="hero-title">받을 돈은,<br><em>세후 숫자</em>로 먼저.</h1>
-      <p class="lead">퇴직금과 남은 연차수당을 한 화면에서 계산합니다. 2026년 퇴직소득세의 근속연수공제·환산급여와 지방소득세까지 빼서 <b>실수령액</b>으로 보여주고, A4 PDF로 저장할 수 있습니다.</p>
+      <h1 id="hero-title" data-i18n-block="hero-h1">받을 돈은,<br><em>세후 숫자</em>로 먼저.</h1>
+      <p class="lead" data-i18n-block="hero-lead">퇴직금과 남은 연차수당을 한 화면에서 계산합니다. 2026년 퇴직소득세의 근속연수공제·환산급여와 지방소득세까지 빼서 <b>실수령액</b>으로 보여주고, A4 PDF로 저장할 수 있습니다.</p>
       <div class="chips">
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>입력값은 브라우저에만</span>
         <span class="chip">가입·설치 없음</span>
@@ -534,7 +534,7 @@ details.process .body{padding:0 12px 12px;font-size:11.5px;color:var(--ink-2)}
               <input type="date" id="lv-ref" autocomplete="off">
             </div>
           </div>
-          <p class="hint">지금까지의 연차는 <b>오늘</b>, 퇴사 정산은 <b>마지막 근무일</b>을 넣으세요.</p>
+          <p class="hint" data-i18n-block="dates-hint">지금까지의 연차는 <b>오늘</b>, 퇴사 정산은 <b>마지막 근무일</b>을 넣으세요.</p>
           <div class="readonly" style="margin-top:10px"><span class="k">근속기간</span><b id="lv-service">—</b></div>
         </div>
 
@@ -681,7 +681,7 @@ details.process .body{padding:0 12px 12px;font-size:11.5px;color:var(--ink-2)}
 
   </div>
 
-  <p class="page-note"><b>법정 기준 참고용</b> · 회사 내규·비과세 수당·중간정산·퇴직연금 수령 방식에 따라 실제 금액은 달라질 수 있습니다. 지급 전 노무사·세무사 확인을 권합니다.</p>
+  <p class="page-note" data-i18n-block="page-note"><b>법정 기준 참고용</b> · 회사 내규·비과세 수당·중간정산·퇴직연금 수령 방식에 따라 실제 금액은 달라질 수 있습니다. 지급 전 노무사·세무사 확인을 권합니다.</p>
 </main>
 
 <footer class="foot">
@@ -1505,5 +1505,6 @@ var CalcCore = (function () {
   renderSeverance();
 })();
 </script>
+<script src="i18n.js"></script>
 </body>
 </html>
